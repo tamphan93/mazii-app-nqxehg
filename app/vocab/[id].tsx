@@ -18,6 +18,7 @@ import { getVocabById, getExamplesForItem, addFlashcard, getFlashcardByTargetId 
 import { mockExamples, cacheExample } from '@/utils/mockData';
 import FuriganaText from '@/components/FuriganaText';
 import PitchAccent from '@/components/PitchAccent';
+import TTSButton from '@/components/TTSButton';
 
 export default function VocabDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -110,22 +111,32 @@ export default function VocabDetailScreen() {
       <ScrollView style={[commonStyles.container, styles.container]}>
         <View style={styles.mainCard}>
           <View style={styles.headerSection}>
-            {vocab.kanji && (
-              <>
-                {showFurigana && vocab.readingFurigana ? (
-                  <FuriganaText
-                    text={vocab.kanji}
-                    furigana={vocab.readingFurigana}
-                    style={styles.furiganaContainer}
-                    kanjiStyle={styles.kanji}
-                    furiganaStyle={styles.furiganaText}
-                  />
-                ) : (
-                  <Text style={styles.kanji}>{vocab.kanji}</Text>
-                )}
-              </>
-            )}
-            <Text style={styles.kana}>{vocab.kana}</Text>
+            <View style={styles.wordContainer}>
+              {vocab.kanji && (
+                <>
+                  {showFurigana && vocab.readingFurigana ? (
+                    <FuriganaText
+                      text={vocab.kanji}
+                      furigana={vocab.readingFurigana}
+                      style={styles.furiganaContainer}
+                      kanjiStyle={styles.kanji}
+                      furiganaStyle={styles.furiganaText}
+                    />
+                  ) : (
+                    <Text style={styles.kanji}>{vocab.kanji}</Text>
+                  )}
+                </>
+              )}
+              <View style={styles.kanaRow}>
+                <Text style={styles.kana}>{vocab.kana}</Text>
+                <TTSButton
+                  text={vocab.kana}
+                  announceText={`Đang đọc ${vocab.kanji || vocab.kana}`}
+                  size={20}
+                  color={colors.primary}
+                />
+              </View>
+            </View>
             
             {vocab.jlpt && (
               <View style={[styles.jlptBadge, { backgroundColor: getJLPTColor(vocab.jlpt) }]}>
@@ -171,7 +182,15 @@ export default function VocabDetailScreen() {
             <Text style={styles.cardTitle}>Ví dụ</Text>
             {examples.map((example) => (
               <View key={example.id} style={styles.exampleItem}>
-                <Text style={styles.exampleJp}>{example.jp}</Text>
+                <View style={styles.exampleHeader}>
+                  <Text style={styles.exampleJp}>{example.jp}</Text>
+                  <TTSButton
+                    text={example.jp}
+                    announceText="Đang đọc ví dụ"
+                    size={18}
+                    color={colors.textSecondary}
+                  />
+                </View>
                 {example.vi && <Text style={styles.exampleVi}>{example.vi}</Text>}
                 {example.en && <Text style={styles.exampleEn}>{example.en}</Text>}
               </View>
@@ -239,6 +258,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  wordContainer: {
+    alignItems: 'center',
+    width: '100%',
+  },
   furiganaContainer: {
     marginBottom: 8,
   },
@@ -252,10 +275,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textSecondary,
   },
+  kanaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
   kana: {
     fontSize: 24,
     color: colors.textSecondary,
-    marginBottom: 12,
   },
   jlptBadge: {
     paddingHorizontal: 12,
@@ -335,11 +363,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  exampleHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
   exampleJp: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 6,
+    flex: 1,
   },
   exampleVi: {
     fontSize: 14,

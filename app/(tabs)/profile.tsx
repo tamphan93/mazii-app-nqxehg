@@ -9,12 +9,13 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { getAllFlashcards, getDueFlashcards } from '@/utils/database';
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const [totalCards, setTotalCards] = useState(0);
   const [dueCards, setDueCards] = useState(0);
 
@@ -84,6 +85,17 @@ export default function ProfileScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Cài đặt</Text>
+
+          <Pressable
+            style={styles.menuItem}
+            onPress={() => router.push('/tts-settings')}
+          >
+            <View style={styles.menuItemLeft}>
+              <IconSymbol name="speaker.wave.2" size={24} color={colors.text} />
+              <Text style={styles.menuItemText}>Giọng đọc (TTS)</Text>
+            </View>
+            <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+          </Pressable>
 
           <Pressable
             style={styles.menuItem}

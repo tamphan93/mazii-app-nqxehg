@@ -14,6 +14,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { Grammar } from '@/types/dictionary';
 import { getGrammarById, addFlashcard, getFlashcardByTargetId } from '@/utils/database';
+import TTSButton from '@/components/TTSButton';
 
 export default function GrammarDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -90,7 +91,15 @@ export default function GrammarDetailScreen() {
       <ScrollView style={[commonStyles.container, styles.container]}>
         <View style={styles.mainCard}>
           <View style={styles.headerSection}>
-            <Text style={styles.pattern}>{grammar.pattern}</Text>
+            <View style={styles.patternRow}>
+              <Text style={styles.pattern}>{grammar.pattern}</Text>
+              <TTSButton
+                text={grammar.pattern}
+                announceText={`Đang đọc ngữ pháp ${grammar.pattern}`}
+                size={22}
+                color={colors.primary}
+              />
+            </View>
             {grammar.jlpt && (
               <View style={[styles.jlptBadge, { backgroundColor: getJLPTColor(grammar.jlpt) }]}>
                 <Text style={styles.jlptText}>{grammar.jlpt}</Text>
@@ -101,7 +110,15 @@ export default function GrammarDetailScreen() {
           {grammar.structure && (
             <View style={styles.structureSection}>
               <Text style={styles.sectionTitle}>Cấu trúc</Text>
-              <Text style={styles.structure}>{grammar.structure}</Text>
+              <View style={styles.structureRow}>
+                <Text style={styles.structure}>{grammar.structure}</Text>
+                <TTSButton
+                  text={grammar.structure}
+                  announceText="Đang đọc cấu trúc"
+                  size={18}
+                  color={colors.textSecondary}
+                />
+              </View>
             </View>
           )}
 
@@ -172,11 +189,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  patternRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
   pattern: {
     fontSize: 32,
     fontWeight: '700',
     color: colors.text,
-    marginBottom: 12,
     textAlign: 'center',
   },
   jlptBadge: {
@@ -202,13 +224,19 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textTransform: 'uppercase',
   },
+  structureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.background,
+    padding: 12,
+    borderRadius: 8,
+  },
   structure: {
     fontSize: 18,
     fontWeight: '600',
     color: colors.text,
-    backgroundColor: colors.background,
-    padding: 12,
-    borderRadius: 8,
+    flex: 1,
   },
   descSection: {
     marginTop: 20,
