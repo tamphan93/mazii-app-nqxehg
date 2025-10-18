@@ -1,6 +1,6 @@
 
 import { Platform } from 'react-native';
-import { Vocab, Kanji, Grammar, Example, Flashcard, Radical, KanjiRadical, ScanHistory } from '@/types/dictionary';
+import { Vocab, Kanji, Grammar, Example, Flashcard, Radical, KanjiRadical, ScanHistory, HistoryEntry, Deck } from '@/types/dictionary';
 
 // Conditionally import SQLite only on native platforms
 let SQLite: any = null;
@@ -86,9 +86,20 @@ export const initDatabase = async () => {
         createdAt TEXT DEFAULT CURRENT_TIMESTAMP
       );
       
+      CREATE TABLE IF NOT EXISTS decks (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        jlptLevel TEXT NOT NULL,
+        description TEXT,
+        isDefault INTEGER DEFAULT 0,
+        createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+      
       CREATE TABLE IF NOT EXISTS flashcards (
         id TEXT PRIMARY KEY,
         userId TEXT,
+        deckId TEXT,
         type TEXT NOT NULL,
         targetId TEXT NOT NULL,
         dueAt TEXT NOT NULL,
@@ -96,7 +107,19 @@ export const initDatabase = async () => {
         ease INTEGER NOT NULL DEFAULT 250,
         repetitions INTEGER NOT NULL DEFAULT 0,
         lastReviewed TEXT,
-        createdAt TEXT DEFAULT CURRENT_TIMESTAMP
+        createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (deckId) REFERENCES decks(id) ON DELETE SET NULL
+      );
+      
+      CREATE TABLE IF NOT EXISTS history (
+        id TEXT PRIMARY KEY,
+        userId TEXT,
+        type TEXT NOT NULL,
+        targetId TEXT NOT NULL,
+        viewedAt TEXT NOT NULL,
+        createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
       );
       
       CREATE TABLE IF NOT EXISTS scan_history (
@@ -114,9 +137,15 @@ export const initDatabase = async () => {
       CREATE INDEX IF NOT EXISTS idx_grammar_pattern ON cached_grammar(pattern);
       CREATE INDEX IF NOT EXISTS idx_flashcards_due ON flashcards(dueAt);
       CREATE INDEX IF NOT EXISTS idx_flashcards_type ON flashcards(type);
+      CREATE INDEX IF NOT EXISTS idx_flashcards_deckId ON flashcards(deckId);
+      CREATE INDEX IF NOT EXISTS idx_flashcards_updatedAt ON flashcards(updatedAt);
       CREATE INDEX IF NOT EXISTS idx_kanji_radical_kanjiId ON kanji_radical(kanjiId);
       CREATE INDEX IF NOT EXISTS idx_kanji_radical_radicalId ON kanji_radical(radicalId);
       CREATE INDEX IF NOT EXISTS idx_scan_history_timestamp ON scan_history(timestamp DESC);
+      CREATE INDEX IF NOT EXISTS idx_history_type ON history(type);
+      CREATE INDEX IF NOT EXISTS idx_history_viewedAt ON history(viewedAt DESC);
+      CREATE INDEX IF NOT EXISTS idx_history_updatedAt ON history(updatedAt);
+      CREATE INDEX IF NOT EXISTS idx_decks_jlptLevel ON decks(jlptLevel);
     `);
     
     console.log('Database initialized successfully');
@@ -135,6 +164,75 @@ export const getDatabase = () => {
     throw new Error('Database not initialized. Call initDatabase first.');
   }
   return db;
+};
+
+// Deck operations
+export const cacheDeck = async (deck: Deck) => {
+  if (Platform.OS === 'web') {
+    console.log('Caching not available on web');
+    return;
+  }
+  const database = getDatabase();
+  try {
+    await database.runAsync(
+      `INSERT OR REPLACE INTO decks (id, name, jlptLevel, description, isDefault, updatedAt) 
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [deck.id, deck.name, deck.jlptLevel, deck.description || null, deck.isDefault ? 1 : 0, new Date().toISOString()]
+    );
+    console.log('Deck cached:', deck.id);
+  } catch (error) {
+    console.error('Error caching deck:', error);
+  }
+};
+
+export const getAllDecks = async (): Promise<Deck[]> => {
+  if (Platform.OS === 'web') {
+    return [];
+  }
+  const database = getDatabase();
+  try {
+    const results = await database.getAllAsync<any>(
+      'SELECT * FROM decks ORDER BY jlptLevel DESC'
+    );
+    return results.map((row: any) => ({
+      id: row.id,
+      name: row.name,
+      jlptLevel: row.jlptLevel,
+      description: row.description,
+      isDefault: row.isDefault === 1,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    }));
+  } catch (error) {
+    console.error('Error getting all decks:', error);
+    return [];
+  }
+};
+
+export const getDeckById = async (id: string): Promise<Deck | null> => {
+  if (Platform.OS === 'web') {
+    return null;
+  }
+  const database = getDatabase();
+  try {
+    const result = await database.getFirstAsync<any>(
+      'SELECT * FROM decks WHERE id = ?',
+      [id]
+    );
+    if (!result) return null;
+    return {
+      id: result.id,
+      name: result.name,
+      jlptLevel: result.jlptLevel,
+      description: result.description,
+      isDefault: result.isDefault === 1,
+      createdAt: result.createdAt,
+      updatedAt: result.updatedAt,
+    };
+  } catch (error) {
+    console.error('Error getting deck by id:', error);
+    return null;
+  }
 };
 
 // Vocab operations
@@ -464,10 +562,11 @@ export const addFlashcard = async (flashcard: Omit<Flashcard, 'id' | 'createdAt'
   const database = getDatabase();
   try {
     const id = `fc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const now = new Date().toISOString();
     await database.runAsync(
-      `INSERT INTO flashcards (id, userId, type, targetId, dueAt, interval, ease, repetitions, lastReviewed) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, flashcard.userId || null, flashcard.type, flashcard.targetId, flashcard.dueAt, flashcard.interval, flashcard.ease, flashcard.repetitions, flashcard.lastReviewed || null]
+      `INSERT INTO flashcards (id, userId, deckId, type, targetId, dueAt, interval, ease, repetitions, lastReviewed, updatedAt) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, flashcard.userId || null, flashcard.deckId || null, flashcard.type, flashcard.targetId, flashcard.dueAt, flashcard.interval, flashcard.ease, flashcard.repetitions, flashcard.lastReviewed || null, now]
     );
     console.log('Flashcard added:', id);
     return id;
@@ -477,18 +576,38 @@ export const addFlashcard = async (flashcard: Omit<Flashcard, 'id' | 'createdAt'
   }
 };
 
-export const getDueFlashcards = async (): Promise<Flashcard[]> => {
+export const getDueFlashcards = async (deckId?: string): Promise<Flashcard[]> => {
   if (Platform.OS === 'web') {
     return [];
   }
   const database = getDatabase();
   try {
     const now = new Date().toISOString();
-    const results = await database.getAllAsync<Flashcard>(
-      `SELECT * FROM flashcards WHERE dueAt <= ? ORDER BY dueAt ASC LIMIT 20`,
-      [now]
-    );
-    return results;
+    let query = `SELECT * FROM flashcards WHERE dueAt <= ?`;
+    const params: any[] = [now];
+    
+    if (deckId) {
+      query += ` AND deckId = ?`;
+      params.push(deckId);
+    }
+    
+    query += ` ORDER BY dueAt ASC LIMIT 20`;
+    
+    const results = await database.getAllAsync<any>(query, params);
+    return results.map((row: any) => ({
+      id: row.id,
+      userId: row.userId,
+      deckId: row.deckId,
+      type: row.type,
+      targetId: row.targetId,
+      dueAt: row.dueAt,
+      interval: row.interval,
+      ease: row.ease,
+      repetitions: row.repetitions,
+      lastReviewed: row.lastReviewed,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    }));
   } catch (error) {
     console.error('Error getting due flashcards:', error);
     return [];
@@ -502,8 +621,9 @@ export const updateFlashcard = async (id: string, updates: Partial<Flashcard>) =
   }
   const database = getDatabase();
   try {
-    const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
-    const values = [...Object.values(updates), id];
+    const updateData = { ...updates, updatedAt: new Date().toISOString() };
+    const fields = Object.keys(updateData).map(key => `${key} = ?`).join(', ');
+    const values = [...Object.values(updateData), id];
     await database.runAsync(
       `UPDATE flashcards SET ${fields} WHERE id = ?`,
       values
@@ -528,16 +648,37 @@ export const deleteFlashcard = async (id: string) => {
   }
 };
 
-export const getAllFlashcards = async (): Promise<Flashcard[]> => {
+export const getAllFlashcards = async (deckId?: string): Promise<Flashcard[]> => {
   if (Platform.OS === 'web') {
     return [];
   }
   const database = getDatabase();
   try {
-    const results = await database.getAllAsync<Flashcard>(
-      'SELECT * FROM flashcards ORDER BY createdAt DESC'
-    );
-    return results;
+    let query = 'SELECT * FROM flashcards';
+    const params: any[] = [];
+    
+    if (deckId) {
+      query += ' WHERE deckId = ?';
+      params.push(deckId);
+    }
+    
+    query += ' ORDER BY createdAt DESC';
+    
+    const results = await database.getAllAsync<any>(query, params);
+    return results.map((row: any) => ({
+      id: row.id,
+      userId: row.userId,
+      deckId: row.deckId,
+      type: row.type,
+      targetId: row.targetId,
+      dueAt: row.dueAt,
+      interval: row.interval,
+      ease: row.ease,
+      repetitions: row.repetitions,
+      lastReviewed: row.lastReviewed,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    }));
   } catch (error) {
     console.error('Error getting all flashcards:', error);
     return [];
@@ -550,14 +691,102 @@ export const getFlashcardByTargetId = async (targetId: string): Promise<Flashcar
   }
   const database = getDatabase();
   try {
-    const result = await database.getFirstAsync<Flashcard>(
+    const result = await database.getFirstAsync<any>(
       'SELECT * FROM flashcards WHERE targetId = ?',
       [targetId]
     );
-    return result || null;
+    if (!result) return null;
+    return {
+      id: result.id,
+      userId: result.userId,
+      deckId: result.deckId,
+      type: result.type,
+      targetId: result.targetId,
+      dueAt: result.dueAt,
+      interval: result.interval,
+      ease: result.ease,
+      repetitions: result.repetitions,
+      lastReviewed: result.lastReviewed,
+      createdAt: result.createdAt,
+      updatedAt: result.updatedAt,
+    };
   } catch (error) {
     console.error('Error getting flashcard by target id:', error);
     return null;
+  }
+};
+
+// History operations
+export const addHistory = async (history: Omit<HistoryEntry, 'id' | 'createdAt'>): Promise<string> => {
+  if (Platform.OS === 'web') {
+    console.log('History not available on web');
+    return '';
+  }
+  const database = getDatabase();
+  try {
+    const id = `hist_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const now = new Date().toISOString();
+    await database.runAsync(
+      `INSERT INTO history (id, userId, type, targetId, viewedAt, updatedAt) 
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [id, history.userId || null, history.type, history.targetId, history.viewedAt, now]
+    );
+    console.log('History added:', id);
+    return id;
+  } catch (error) {
+    console.error('Error adding history:', error);
+    return '';
+  }
+};
+
+export const getHistory = async (type?: 'vocab' | 'kanji' | 'grammar', limit: number = 50): Promise<HistoryEntry[]> => {
+  if (Platform.OS === 'web') {
+    return [];
+  }
+  const database = getDatabase();
+  try {
+    let query = 'SELECT * FROM history';
+    const params: any[] = [];
+    
+    if (type) {
+      query += ' WHERE type = ?';
+      params.push(type);
+    }
+    
+    query += ' ORDER BY viewedAt DESC LIMIT ?';
+    params.push(limit);
+    
+    const results = await database.getAllAsync<any>(query, params);
+    return results.map((row: any) => ({
+      id: row.id,
+      userId: row.userId,
+      type: row.type,
+      targetId: row.targetId,
+      viewedAt: row.viewedAt,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    }));
+  } catch (error) {
+    console.error('Error getting history:', error);
+    return [];
+  }
+};
+
+export const clearHistory = async (type?: 'vocab' | 'kanji' | 'grammar') => {
+  if (Platform.OS === 'web') {
+    console.log('History not available on web');
+    return;
+  }
+  const database = getDatabase();
+  try {
+    if (type) {
+      await database.runAsync('DELETE FROM history WHERE type = ?', [type]);
+    } else {
+      await database.runAsync('DELETE FROM history');
+    }
+    console.log('History cleared');
+  } catch (error) {
+    console.error('Error clearing history:', error);
   }
 };
 

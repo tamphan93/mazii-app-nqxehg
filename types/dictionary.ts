@@ -60,9 +60,20 @@ export interface Example {
   grammarId?: string;
 }
 
+export interface Deck {
+  id: string;
+  name: string;
+  jlptLevel: string;
+  description?: string;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Flashcard {
   id: string;
   userId?: string;
+  deckId?: string;
   type: 'vocab' | 'kanji' | 'grammar';
   targetId: string;
   dueAt: string;
@@ -71,6 +82,17 @@ export interface Flashcard {
   repetitions: number;
   lastReviewed?: string;
   createdAt: string;
+  updatedAt?: string;
+}
+
+export interface HistoryEntry {
+  id: string;
+  userId?: string;
+  type: 'vocab' | 'kanji' | 'grammar';
+  targetId: string;
+  viewedAt: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface ScanHistory {
