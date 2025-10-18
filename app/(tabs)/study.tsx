@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -29,11 +29,7 @@ export default function StudyScreen() {
   const [loading, setLoading] = useState(true);
   const [reviewing, setReviewing] = useState(false);
 
-  useEffect(() => {
-    loadDueCards();
-  }, []);
-
-  const loadDueCards = async () => {
+  const loadDueCards = useCallback(async () => {
     try {
       setLoading(true);
       const cards = await getDueFlashcards();
@@ -46,7 +42,11 @@ export default function StudyScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadDueCards();
+  }, [loadDueCards]);
 
   const loadCard = async (card: Flashcard) => {
     try {

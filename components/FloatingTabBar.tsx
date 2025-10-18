@@ -4,7 +4,6 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  interpolate,
 } from 'react-native-reanimated';
 import { useRouter, usePathname } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -13,7 +12,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Platform,
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -56,7 +54,7 @@ export default function FloatingTabBar({
         stiffness: 100,
       });
     }
-  }, [pathname]);
+  }, [pathname, activeIndex, tabs]);
 
   const indicatorStyle = useAnimatedStyle(() => {
     const tabWidth = containerWidth / tabs.length;
@@ -73,7 +71,7 @@ export default function FloatingTabBar({
     >
       <BlurView intensity={80} tint="light" style={[styles.container, { width: containerWidth, borderRadius }]}>
         <Animated.View style={[styles.indicator, indicatorStyle, { borderRadius: borderRadius - 4 }]} />
-        {tabs.map((tab, index) => {
+        {tabs.map((tab) => {
           const isActive = pathname.includes(tab.name);
           return (
             <TouchableOpacity

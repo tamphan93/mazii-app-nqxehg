@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -22,11 +22,7 @@ export default function GrammarDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [hasFlashcard, setHasFlashcard] = useState(false);
 
-  useEffect(() => {
-    loadGrammarData();
-  }, [id]);
-
-  const loadGrammarData = async () => {
+  const loadGrammarData = useCallback(async () => {
     try {
       setLoading(true);
       const grammarData = await getGrammarById(id);
@@ -39,7 +35,11 @@ export default function GrammarDetailScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    loadGrammarData();
+  }, [loadGrammarData]);
 
   const handleAddFlashcard = async () => {
     try {

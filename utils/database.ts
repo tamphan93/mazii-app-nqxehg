@@ -5,6 +5,7 @@ import { Vocab, Kanji, Grammar, Example, Flashcard } from '@/types/dictionary';
 // Conditionally import SQLite only on native platforms
 let SQLite: any = null;
 if (Platform.OS !== 'web') {
+  // Use dynamic import for native platforms
   SQLite = require('expo-sqlite');
 }
 

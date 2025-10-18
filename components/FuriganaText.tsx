@@ -31,7 +31,7 @@ export default function FuriganaText({
 }: FuriganaTextProps) {
   const parseSegments = (): (FuriganaSegment | string)[] => {
     const segments: (FuriganaSegment | string)[] = [];
-    const regex = /([^\[]+)\[([^\]]+)\]/g;
+    const regex = /([^[]+)\[([^\]]+)\]/g;
     let lastIndex = 0;
     let match;
 

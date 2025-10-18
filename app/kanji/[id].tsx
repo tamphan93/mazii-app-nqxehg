@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -22,11 +22,7 @@ export default function KanjiDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [hasFlashcard, setHasFlashcard] = useState(false);
 
-  useEffect(() => {
-    loadKanjiData();
-  }, [id]);
-
-  const loadKanjiData = async () => {
+  const loadKanjiData = useCallback(async () => {
     try {
       setLoading(true);
       const kanjiData = await getKanjiById(id);
@@ -39,7 +35,11 @@ export default function KanjiDetailScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    loadKanjiData();
+  }, [loadKanjiData]);
 
   const handleAddFlashcard = async () => {
     try {

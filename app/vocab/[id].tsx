@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -28,11 +28,7 @@ export default function VocabDetailScreen() {
   const [hasFlashcard, setHasFlashcard] = useState(false);
   const [showFurigana, setShowFurigana] = useState(false);
 
-  useEffect(() => {
-    loadVocabData();
-  }, [id]);
-
-  const loadVocabData = async () => {
+  const loadVocabData = useCallback(async () => {
     try {
       setLoading(true);
       const vocabData = await getVocabById(id);
@@ -59,7 +55,11 @@ export default function VocabDetailScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    loadVocabData();
+  }, [loadVocabData]);
 
   const handleAddFlashcard = async () => {
     try {

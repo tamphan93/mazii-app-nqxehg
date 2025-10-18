@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -36,13 +36,7 @@ export default function SearchScreen() {
   const [usedDeconjugation, setUsedDeconjugation] = useState(false);
   const [deconjugatedForms, setDeconjugatedForms] = useState<string[]>([]);
 
-  useEffect(() => {
-    if (isReady) {
-      loadMockData();
-    }
-  }, [isReady]);
-
-  const loadMockData = async () => {
+  const loadMockData = useCallback(async () => {
     try {
       for (const vocab of mockVocabData) {
         await cacheVocab(vocab);
@@ -57,7 +51,26 @@ export default function SearchScreen() {
     } catch (error) {
       console.error('Error loading mock data:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (isReady) {
+      loadMockData();
+    }
+  }, [isReady, loadMockData]);
+
+  const performSearch = useCallback(async () => {
+    try {
+      const result = await search(searchQuery);
+      setVocabResults(result.vocab);
+      setKanjiResults(result.kanji);
+      setGrammarResults(result.grammar);
+      setUsedDeconjugation(result.usedDeconjugation);
+      setDeconjugatedForms(result.deconjugatedForms);
+    } catch (error) {
+      console.error('Search error:', error);
+    }
+  }, [search, searchQuery]);
 
   useEffect(() => {
     if (searchQuery.trim() && isReady) {
@@ -69,20 +82,7 @@ export default function SearchScreen() {
       setUsedDeconjugation(false);
       setDeconjugatedForms([]);
     }
-  }, [searchQuery, isReady]);
-
-  const performSearch = async () => {
-    try {
-      const result = await search(searchQuery);
-      setVocabResults(result.vocab);
-      setKanjiResults(result.kanji);
-      setGrammarResults(result.grammar);
-      setUsedDeconjugation(result.usedDeconjugation);
-      setDeconjugatedForms(result.deconjugatedForms);
-    } catch (error) {
-      console.error('Search error:', error);
-    }
-  };
+  }, [searchQuery, isReady, performSearch]);
 
   const highlightText = (text: string, query: string) => {
     if (!query.trim()) return text;
