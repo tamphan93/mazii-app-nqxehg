@@ -25,7 +25,12 @@ export class TTSManager {
   private isSpeaking = false;
 
   private constructor() {
-    this.loadSettings();
+    // Only load settings on native platforms
+    if (Platform.OS !== 'web') {
+      this.loadSettings();
+    } else {
+      console.warn('TTS: Settings not loaded on web platform');
+    }
   }
 
   static getInstance(): TTSManager {
@@ -36,6 +41,12 @@ export class TTSManager {
   }
 
   async loadSettings(): Promise<void> {
+    // Skip loading on web platform
+    if (Platform.OS === 'web') {
+      console.warn('TTS: Settings not available on web platform');
+      return;
+    }
+
     try {
       const stored = await AsyncStorage.getItem(TTS_SETTINGS_KEY);
       if (stored) {
@@ -47,6 +58,13 @@ export class TTSManager {
   }
 
   async saveSettings(settings: Partial<TTSSettings>): Promise<void> {
+    // Skip saving on web platform
+    if (Platform.OS === 'web') {
+      console.warn('TTS: Settings cannot be saved on web platform');
+      this.settings = { ...this.settings, ...settings };
+      return;
+    }
+
     try {
       this.settings = { ...this.settings, ...settings };
       await AsyncStorage.setItem(TTS_SETTINGS_KEY, JSON.stringify(this.settings));
@@ -80,7 +98,7 @@ export class TTSManager {
 
       this.isSpeaking = true;
 
-      // Haptic feedback on start
+      // Haptic feedback on start (only on native)
       if (Platform.OS !== 'web') {
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }

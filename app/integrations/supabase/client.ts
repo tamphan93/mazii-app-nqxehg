@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import type { Database } from './types';
 import { createClient } from '@supabase/supabase-js';
+import { Platform } from 'react-native';
 
 // Read from environment variables with fallbacks
 const SUPABASE_URL = 
@@ -28,14 +29,24 @@ if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY === "your_anon_key_here") {
 
 console.log('✅ Supabase client initialized with URL:', SUPABASE_URL);
 
+// Configure auth options based on platform
+const authOptions: any = {
+  autoRefreshToken: true,
+  persistSession: true,
+  detectSessionInUrl: false,
+};
+
+// Only use AsyncStorage on native platforms
+if (Platform.OS !== 'web') {
+  authOptions.storage = AsyncStorage;
+  console.log('✅ Using AsyncStorage for session persistence');
+} else {
+  console.log('⚠️ Web platform detected - using default storage');
+}
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    storage: AsyncStorage,
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
-  },
+  auth: authOptions,
 });
