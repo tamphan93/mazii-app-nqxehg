@@ -1,10 +1,22 @@
 
-import * as SQLite from 'expo-sqlite';
+import { Platform } from 'react-native';
 import { Vocab, Kanji, Grammar, Example, Flashcard } from '@/types/dictionary';
 
-let db: SQLite.SQLiteDatabase | null = null;
+// Conditionally import SQLite only on native platforms
+let SQLite: any = null;
+if (Platform.OS !== 'web') {
+  SQLite = require('expo-sqlite');
+}
+
+let db: any = null;
 
 export const initDatabase = async () => {
+  // Skip SQLite initialization on web
+  if (Platform.OS === 'web') {
+    console.log('SQLite not supported on web - using in-memory storage');
+    return null;
+  }
+  
   try {
     db = await SQLite.openDatabaseAsync('mazii.db');
     
@@ -87,6 +99,9 @@ export const initDatabase = async () => {
 };
 
 export const getDatabase = () => {
+  if (Platform.OS === 'web') {
+    return null;
+  }
   if (!db) {
     throw new Error('Database not initialized. Call initDatabase first.');
   }
@@ -95,6 +110,10 @@ export const getDatabase = () => {
 
 // Vocab operations
 export const cacheVocab = async (vocab: Vocab) => {
+  if (Platform.OS === 'web') {
+    console.log('Caching not available on web');
+    return;
+  }
   const database = getDatabase();
   try {
     await database.runAsync(
@@ -109,6 +128,9 @@ export const cacheVocab = async (vocab: Vocab) => {
 };
 
 export const searchCachedVocab = async (query: string): Promise<Vocab[]> => {
+  if (Platform.OS === 'web') {
+    return [];
+  }
   const database = getDatabase();
   try {
     const results = await database.getAllAsync<Vocab>(
@@ -125,6 +147,9 @@ export const searchCachedVocab = async (query: string): Promise<Vocab[]> => {
 };
 
 export const getVocabById = async (id: string): Promise<Vocab | null> => {
+  if (Platform.OS === 'web') {
+    return null;
+  }
   const database = getDatabase();
   try {
     const result = await database.getFirstAsync<Vocab>(
@@ -140,6 +165,10 @@ export const getVocabById = async (id: string): Promise<Vocab | null> => {
 
 // Kanji operations
 export const cacheKanji = async (kanji: Kanji) => {
+  if (Platform.OS === 'web') {
+    console.log('Caching not available on web');
+    return;
+  }
   const database = getDatabase();
   try {
     await database.runAsync(
@@ -154,6 +183,9 @@ export const cacheKanji = async (kanji: Kanji) => {
 };
 
 export const searchCachedKanji = async (query: string): Promise<Kanji[]> => {
+  if (Platform.OS === 'web') {
+    return [];
+  }
   const database = getDatabase();
   try {
     const results = await database.getAllAsync<Kanji>(
@@ -170,6 +202,9 @@ export const searchCachedKanji = async (query: string): Promise<Kanji[]> => {
 };
 
 export const getKanjiById = async (id: string): Promise<Kanji | null> => {
+  if (Platform.OS === 'web') {
+    return null;
+  }
   const database = getDatabase();
   try {
     const result = await database.getFirstAsync<Kanji>(
@@ -185,6 +220,10 @@ export const getKanjiById = async (id: string): Promise<Kanji | null> => {
 
 // Grammar operations
 export const cacheGrammar = async (grammar: Grammar) => {
+  if (Platform.OS === 'web') {
+    console.log('Caching not available on web');
+    return;
+  }
   const database = getDatabase();
   try {
     await database.runAsync(
@@ -199,6 +238,9 @@ export const cacheGrammar = async (grammar: Grammar) => {
 };
 
 export const searchCachedGrammar = async (query: string): Promise<Grammar[]> => {
+  if (Platform.OS === 'web') {
+    return [];
+  }
   const database = getDatabase();
   try {
     const results = await database.getAllAsync<Grammar>(
@@ -215,6 +257,9 @@ export const searchCachedGrammar = async (query: string): Promise<Grammar[]> => 
 };
 
 export const getGrammarById = async (id: string): Promise<Grammar | null> => {
+  if (Platform.OS === 'web') {
+    return null;
+  }
   const database = getDatabase();
   try {
     const result = await database.getFirstAsync<Grammar>(
@@ -230,6 +275,10 @@ export const getGrammarById = async (id: string): Promise<Grammar | null> => {
 
 // Example operations
 export const cacheExample = async (example: Example) => {
+  if (Platform.OS === 'web') {
+    console.log('Caching not available on web');
+    return;
+  }
   const database = getDatabase();
   try {
     await database.runAsync(
@@ -243,6 +292,9 @@ export const cacheExample = async (example: Example) => {
 };
 
 export const getExamplesForItem = async (itemId: string, type: 'vocab' | 'kanji' | 'grammar'): Promise<Example[]> => {
+  if (Platform.OS === 'web') {
+    return [];
+  }
   const database = getDatabase();
   try {
     const column = type === 'vocab' ? 'vocabId' : type === 'kanji' ? 'kanjiId' : 'grammarId';
@@ -259,6 +311,10 @@ export const getExamplesForItem = async (itemId: string, type: 'vocab' | 'kanji'
 
 // Flashcard operations
 export const addFlashcard = async (flashcard: Omit<Flashcard, 'id' | 'createdAt'>): Promise<string> => {
+  if (Platform.OS === 'web') {
+    console.log('Flashcards not available on web');
+    throw new Error('Flashcards not available on web platform');
+  }
   const database = getDatabase();
   try {
     const id = `fc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -276,6 +332,9 @@ export const addFlashcard = async (flashcard: Omit<Flashcard, 'id' | 'createdAt'
 };
 
 export const getDueFlashcards = async (): Promise<Flashcard[]> => {
+  if (Platform.OS === 'web') {
+    return [];
+  }
   const database = getDatabase();
   try {
     const now = new Date().toISOString();
@@ -291,6 +350,10 @@ export const getDueFlashcards = async (): Promise<Flashcard[]> => {
 };
 
 export const updateFlashcard = async (id: string, updates: Partial<Flashcard>) => {
+  if (Platform.OS === 'web') {
+    console.log('Flashcards not available on web');
+    return;
+  }
   const database = getDatabase();
   try {
     const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
@@ -306,6 +369,10 @@ export const updateFlashcard = async (id: string, updates: Partial<Flashcard>) =
 };
 
 export const deleteFlashcard = async (id: string) => {
+  if (Platform.OS === 'web') {
+    console.log('Flashcards not available on web');
+    return;
+  }
   const database = getDatabase();
   try {
     await database.runAsync('DELETE FROM flashcards WHERE id = ?', [id]);
@@ -316,6 +383,9 @@ export const deleteFlashcard = async (id: string) => {
 };
 
 export const getAllFlashcards = async (): Promise<Flashcard[]> => {
+  if (Platform.OS === 'web') {
+    return [];
+  }
   const database = getDatabase();
   try {
     const results = await database.getAllAsync<Flashcard>(
@@ -329,6 +399,9 @@ export const getAllFlashcards = async (): Promise<Flashcard[]> => {
 };
 
 export const getFlashcardByTargetId = async (targetId: string): Promise<Flashcard | null> => {
+  if (Platform.OS === 'web') {
+    return null;
+  }
   const database = getDatabase();
   try {
     const result = await database.getFirstAsync<Flashcard>(

@@ -9,4 +9,11 @@ config.cacheStores = [
     new FileStore({ root: path.join(__dirname, 'node_modules', '.cache', 'metro') }),
   ];
 
+// Add resolver configuration to handle platform-specific imports
+config.resolver = {
+  ...config.resolver,
+  sourceExts: [...(config.resolver?.sourceExts || []), 'sql'],
+  assetExts: [...(config.resolver?.assetExts || []).filter(ext => ext !== 'sql'), 'db', 'wasm'],
+};
+
 module.exports = config;
