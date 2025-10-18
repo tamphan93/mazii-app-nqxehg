@@ -1,6 +1,6 @@
 
 import { Platform } from 'react-native';
-import { Vocab, Kanji, Grammar, Example, Flashcard } from '@/types/dictionary';
+import { Vocab, Kanji, Grammar, Example, Flashcard, Radical, KanjiRadical } from '@/types/dictionary';
 
 // Conditionally import SQLite only on native platforms
 let SQLite: any = null;
@@ -49,6 +49,22 @@ export const initDatabase = async () => {
         createdAt TEXT DEFAULT CURRENT_TIMESTAMP
       );
       
+      CREATE TABLE IF NOT EXISTS radicals (
+        id TEXT PRIMARY KEY,
+        symbol TEXT NOT NULL,
+        nameVi TEXT NOT NULL,
+        strokeCount INTEGER,
+        createdAt TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+      
+      CREATE TABLE IF NOT EXISTS kanji_radical (
+        kanjiId TEXT NOT NULL,
+        radicalId TEXT NOT NULL,
+        PRIMARY KEY (kanjiId, radicalId),
+        FOREIGN KEY (kanjiId) REFERENCES cached_kanji(id) ON DELETE CASCADE,
+        FOREIGN KEY (radicalId) REFERENCES radicals(id) ON DELETE CASCADE
+      );
+      
       CREATE TABLE IF NOT EXISTS cached_grammar (
         id TEXT PRIMARY KEY,
         pattern TEXT UNIQUE NOT NULL,
@@ -86,9 +102,12 @@ export const initDatabase = async () => {
       CREATE INDEX IF NOT EXISTS idx_vocab_kana ON cached_vocab(kana);
       CREATE INDEX IF NOT EXISTS idx_vocab_kanji ON cached_vocab(kanji);
       CREATE INDEX IF NOT EXISTS idx_kanji_char ON cached_kanji(char);
+      CREATE INDEX IF NOT EXISTS idx_kanji_strokeCount ON cached_kanji(strokeCount);
       CREATE INDEX IF NOT EXISTS idx_grammar_pattern ON cached_grammar(pattern);
       CREATE INDEX IF NOT EXISTS idx_flashcards_due ON flashcards(dueAt);
       CREATE INDEX IF NOT EXISTS idx_flashcards_type ON flashcards(type);
+      CREATE INDEX IF NOT EXISTS idx_kanji_radical_kanjiId ON kanji_radical(kanjiId);
+      CREATE INDEX IF NOT EXISTS idx_kanji_radical_radicalId ON kanji_radical(radicalId);
     `);
     
     console.log('Database initialized successfully');
@@ -216,6 +235,123 @@ export const getKanjiById = async (id: string): Promise<Kanji | null> => {
   } catch (error) {
     console.error('Error getting kanji by id:', error);
     return null;
+  }
+};
+
+// Radical operations
+export const cacheRadical = async (radical: Radical) => {
+  if (Platform.OS === 'web') {
+    console.log('Caching not available on web');
+    return;
+  }
+  const database = getDatabase();
+  try {
+    await database.runAsync(
+      `INSERT OR REPLACE INTO radicals (id, symbol, nameVi, strokeCount) 
+       VALUES (?, ?, ?, ?)`,
+      [radical.id, radical.symbol, radical.nameVi, radical.strokeCount || null]
+    );
+    console.log('Radical cached:', radical.id);
+  } catch (error) {
+    console.error('Error caching radical:', error);
+  }
+};
+
+export const getAllRadicals = async (): Promise<Radical[]> => {
+  if (Platform.OS === 'web') {
+    return [];
+  }
+  const database = getDatabase();
+  try {
+    const results = await database.getAllAsync<Radical>(
+      'SELECT * FROM radicals ORDER BY strokeCount ASC, symbol ASC'
+    );
+    return results;
+  } catch (error) {
+    console.error('Error getting all radicals:', error);
+    return [];
+  }
+};
+
+// Kanji-Radical linking operations
+export const linkKanjiRadical = async (kanjiId: string, radicalId: string) => {
+  if (Platform.OS === 'web') {
+    console.log('Linking not available on web');
+    return;
+  }
+  const database = getDatabase();
+  try {
+    await database.runAsync(
+      `INSERT OR IGNORE INTO kanji_radical (kanjiId, radicalId) VALUES (?, ?)`,
+      [kanjiId, radicalId]
+    );
+    console.log('Kanji-Radical linked:', kanjiId, radicalId);
+  } catch (error) {
+    console.error('Error linking kanji-radical:', error);
+  }
+};
+
+export const getRadicalsForKanji = async (kanjiId: string): Promise<Radical[]> => {
+  if (Platform.OS === 'web') {
+    return [];
+  }
+  const database = getDatabase();
+  try {
+    const results = await database.getAllAsync<Radical>(
+      `SELECT r.* FROM radicals r
+       INNER JOIN kanji_radical kr ON r.id = kr.radicalId
+       WHERE kr.kanjiId = ?`,
+      [kanjiId]
+    );
+    return results;
+  } catch (error) {
+    console.error('Error getting radicals for kanji:', error);
+    return [];
+  }
+};
+
+// Search kanji by radical and stroke count
+export const searchKanjiByRadical = async (
+  radicalId?: string,
+  strokesMin?: number,
+  strokesMax?: number
+): Promise<Kanji[]> => {
+  if (Platform.OS === 'web') {
+    return [];
+  }
+  const database = getDatabase();
+  try {
+    let query = 'SELECT DISTINCT k.* FROM cached_kanji k';
+    const params: any[] = [];
+    const conditions: string[] = [];
+
+    if (radicalId) {
+      query += ' INNER JOIN kanji_radical kr ON k.id = kr.kanjiId';
+      conditions.push('kr.radicalId = ?');
+      params.push(radicalId);
+    }
+
+    if (strokesMin !== undefined && strokesMin > 0) {
+      conditions.push('k.strokeCount >= ?');
+      params.push(strokesMin);
+    }
+
+    if (strokesMax !== undefined && strokesMax > 0) {
+      conditions.push('k.strokeCount <= ?');
+      params.push(strokesMax);
+    }
+
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
+    }
+
+    query += ' ORDER BY k.strokeCount ASC, k.char ASC LIMIT 100';
+
+    const results = await database.getAllAsync<Kanji>(query, params);
+    return results;
+  } catch (error) {
+    console.error('Error searching kanji by radical:', error);
+    return [];
   }
 };
 

@@ -27,6 +27,18 @@ export interface Kanji {
   createdAt?: string;
 }
 
+export interface Radical {
+  id: string;
+  symbol: string;
+  nameVi: string;
+  strokeCount?: number;
+}
+
+export interface KanjiRadical {
+  kanjiId: string;
+  radicalId: string;
+}
+
 export interface Grammar {
   id: string;
   pattern: string;

@@ -1,5 +1,5 @@
 
-import { Vocab, Kanji, Grammar, Example } from '@/types/dictionary';
+import { Vocab, Kanji, Grammar, Example, Radical } from '@/types/dictionary';
 
 export const mockVocabData: Vocab[] = [
   {
@@ -181,6 +181,138 @@ export const mockKanjiData: Kanji[] = [
     radical: '木',
     strokeCount: 5,
   },
+  {
+    id: 'k6',
+    char: '日',
+    onyomi: 'ニチ、ジツ',
+    kunyomi: 'ひ、か',
+    meaningVi: 'ngày, mặt trời',
+    meaningEn: 'day, sun',
+    jlpt: 'N5',
+    radical: '日',
+    strokeCount: 4,
+  },
+  {
+    id: 'k7',
+    char: '木',
+    onyomi: 'モク、ボク',
+    kunyomi: 'き、こ',
+    meaningVi: 'cây',
+    meaningEn: 'tree, wood',
+    jlpt: 'N5',
+    radical: '木',
+    strokeCount: 4,
+  },
+  {
+    id: 'k8',
+    char: '子',
+    onyomi: 'シ、ス',
+    kunyomi: 'こ',
+    meaningVi: 'con, trẻ em',
+    meaningEn: 'child',
+    jlpt: 'N5',
+    radical: '子',
+    strokeCount: 3,
+  },
+  {
+    id: 'k9',
+    char: '心',
+    onyomi: 'シン',
+    kunyomi: 'こころ',
+    meaningVi: 'trái tim, tâm',
+    meaningEn: 'heart, mind',
+    jlpt: 'N4',
+    radical: '心',
+    strokeCount: 4,
+  },
+  {
+    id: 'k10',
+    char: '見',
+    onyomi: 'ケン',
+    kunyomi: 'み.る',
+    meaningVi: 'nhìn, xem',
+    meaningEn: 'see, look',
+    jlpt: 'N5',
+    radical: '見',
+    strokeCount: 7,
+  },
+];
+
+export const mockRadicalData: Radical[] = [
+  {
+    id: 'r1',
+    symbol: '食',
+    nameVi: 'Thực (ăn)',
+    strokeCount: 9,
+  },
+  {
+    id: 'r2',
+    symbol: '日',
+    nameVi: 'Nhật (mặt trời)',
+    strokeCount: 4,
+  },
+  {
+    id: 'r3',
+    symbol: '木',
+    nameVi: 'Mộc (cây)',
+    strokeCount: 4,
+  },
+  {
+    id: 'r4',
+    symbol: '子',
+    nameVi: 'Tử (con)',
+    strokeCount: 3,
+  },
+  {
+    id: 'r5',
+    symbol: '心',
+    nameVi: 'Tâm (trái tim)',
+    strokeCount: 4,
+  },
+  {
+    id: 'r6',
+    symbol: '見',
+    nameVi: 'Kiến (nhìn)',
+    strokeCount: 7,
+  },
+  {
+    id: 'r7',
+    symbol: '人',
+    nameVi: 'Nhân (người)',
+    strokeCount: 2,
+  },
+  {
+    id: 'r8',
+    symbol: '水',
+    nameVi: 'Thủy (nước)',
+    strokeCount: 4,
+  },
+  {
+    id: 'r9',
+    symbol: '火',
+    nameVi: 'Hỏa (lửa)',
+    strokeCount: 4,
+  },
+  {
+    id: 'r10',
+    symbol: '土',
+    nameVi: 'Thổ (đất)',
+    strokeCount: 3,
+  },
+];
+
+// Kanji-Radical relationships
+export const mockKanjiRadicalLinks = [
+  { kanjiId: 'k1', radicalId: 'r1' }, // 食 - 食
+  { kanjiId: 'k2', radicalId: 'r2' }, // 早 - 日
+  { kanjiId: 'k3', radicalId: 'r4' }, // 学 - 子
+  { kanjiId: 'k4', radicalId: 'r3' }, // 校 - 木
+  { kanjiId: 'k5', radicalId: 'r3' }, // 本 - 木
+  { kanjiId: 'k6', radicalId: 'r2' }, // 日 - 日
+  { kanjiId: 'k7', radicalId: 'r3' }, // 木 - 木
+  { kanjiId: 'k8', radicalId: 'r4' }, // 子 - 子
+  { kanjiId: 'k9', radicalId: 'r5' }, // 心 - 心
+  { kanjiId: 'k10', radicalId: 'r6' }, // 見 - 見
 ];
 
 export const mockGrammarData: Grammar[] = [
