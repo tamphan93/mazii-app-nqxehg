@@ -89,16 +89,6 @@ export default function SearchScreen() {
     }
   }, [params.query, params.fromScan]);
 
-  useEffect(() => {
-    if (searchQuery.trim() && isReady) {
-      performSearch();
-    } else {
-      setVocabResults([]);
-      setKanjiResults([]);
-      setGrammarResults([]);
-    }
-  }, [searchQuery, isReady]);
-
   const performSearch = useCallback(async () => {
     if (!searchQuery.trim()) {
       return;
@@ -116,6 +106,16 @@ export default function SearchScreen() {
       setIsLoading(false);
     }
   }, [searchQuery, searchWithDeconjugation]);
+
+  useEffect(() => {
+    if (searchQuery.trim() && isReady) {
+      performSearch();
+    } else {
+      setVocabResults([]);
+      setKanjiResults([]);
+      setGrammarResults([]);
+    }
+  }, [searchQuery, isReady, performSearch]);
 
   const highlightText = (text: string, query: string) => {
     if (!query.trim()) {

@@ -1,13 +1,7 @@
 
 import { Platform } from 'react-native';
 import { Vocab, Kanji, Grammar, Example, Flashcard, Radical, KanjiRadical, ScanHistory, HistoryEntry, Deck } from '@/types/dictionary';
-
-// Conditionally import SQLite only on native platforms
-let SQLite: any = null;
-if (Platform.OS !== 'web') {
-  // Use dynamic import for native platforms
-  SQLite = require('expo-sqlite');
-}
+import * as SQLite from 'expo-sqlite';
 
 let db: any = null;
 

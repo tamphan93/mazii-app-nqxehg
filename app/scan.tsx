@@ -42,7 +42,7 @@ export default function ScanScreen() {
         [{ text: 'OK', onPress: () => router.back() }]
       );
     }
-  }, []);
+  }, [router]);
 
   if (!permission) {
     return (
