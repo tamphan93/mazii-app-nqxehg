@@ -10,6 +10,8 @@ export const mockVocabData: Vocab[] = [
     meaningEn: 'to eat',
     jlpt: 'N5',
     pos: 'verb',
+    readingFurigana: '食[た]べる',
+    pitch: '2',
   },
   {
     id: 'v2',
@@ -19,6 +21,8 @@ export const mockVocabData: Vocab[] = [
     meaningEn: 'fast, early',
     jlpt: 'N5',
     pos: 'adjective',
+    readingFurigana: '早[はや]い',
+    pitch: '0',
   },
   {
     id: 'v3',
@@ -28,6 +32,8 @@ export const mockVocabData: Vocab[] = [
     meaningEn: 'study',
     jlpt: 'N5',
     pos: 'noun',
+    readingFurigana: '勉[べん]強[きょう]',
+    pitch: '0',
   },
   {
     id: 'v4',
@@ -37,6 +43,8 @@ export const mockVocabData: Vocab[] = [
     meaningEn: 'school',
     jlpt: 'N5',
     pos: 'noun',
+    readingFurigana: '学[がっ]校[こう]',
+    pitch: '0',
   },
   {
     id: 'v5',
@@ -46,6 +54,8 @@ export const mockVocabData: Vocab[] = [
     meaningEn: 'teacher',
     jlpt: 'N5',
     pos: 'noun',
+    readingFurigana: '先[せん]生[せい]',
+    pitch: '3',
   },
   {
     id: 'v6',
@@ -55,6 +65,8 @@ export const mockVocabData: Vocab[] = [
     meaningEn: 'book',
     jlpt: 'N5',
     pos: 'noun',
+    readingFurigana: '本[ほん]',
+    pitch: '1',
   },
   {
     id: 'v7',
@@ -64,6 +76,8 @@ export const mockVocabData: Vocab[] = [
     meaningEn: 'to see, to watch',
     jlpt: 'N5',
     pos: 'verb',
+    readingFurigana: '見[み]る',
+    pitch: '0',
   },
   {
     id: 'v8',
@@ -73,6 +87,41 @@ export const mockVocabData: Vocab[] = [
     meaningEn: 'to go',
     jlpt: 'N5',
     pos: 'verb',
+    readingFurigana: '行[い]く',
+    pitch: '0',
+  },
+  {
+    id: 'v9',
+    kanji: '橋',
+    kana: 'はし',
+    meaningVi: 'cầu',
+    meaningEn: 'bridge',
+    jlpt: 'N5',
+    pos: 'noun',
+    readingFurigana: '橋[はし]',
+    pitch: '0',
+  },
+  {
+    id: 'v10',
+    kanji: '箸',
+    kana: 'はし',
+    meaningVi: 'đũa',
+    meaningEn: 'chopsticks',
+    jlpt: 'N5',
+    pos: 'noun',
+    readingFurigana: '箸[はし]',
+    pitch: '1',
+  },
+  {
+    id: 'v11',
+    kanji: '心',
+    kana: 'こころ',
+    meaningVi: 'trái tim, tâm hồn',
+    meaningEn: 'heart, mind',
+    jlpt: 'N4',
+    pos: 'noun',
+    readingFurigana: '心[こころ]',
+    pitch: '3',
   },
 ];
 
@@ -206,3 +255,11 @@ export const mockExamples: Example[] = [
     vocabId: 'v5',
   },
 ];
+
+// Helper function to cache examples
+export const cacheExample = async (example: Example) => {
+  // This is a mock function for now
+  // In a real app, this would save to SQLite
+  console.log('Caching example:', example.id);
+  return Promise.resolve();
+};

@@ -9,6 +9,8 @@ export interface Vocab {
   pos?: string;
   examples?: Example[];
   createdAt?: string;
+  readingFurigana?: string;
+  pitch?: string;
 }
 
 export interface Kanji {

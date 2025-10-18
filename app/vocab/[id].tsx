@@ -8,6 +8,7 @@ import {
   Pressable,
   ActivityIndicator,
   Alert,
+  Switch,
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -15,6 +16,8 @@ import { colors, commonStyles } from '@/styles/commonStyles';
 import { Vocab, Example } from '@/types/dictionary';
 import { getVocabById, getExamplesForItem, addFlashcard, getFlashcardByTargetId } from '@/utils/database';
 import { mockExamples, cacheExample } from '@/utils/mockData';
+import FuriganaText from '@/components/FuriganaText';
+import PitchAccent from '@/components/PitchAccent';
 
 export default function VocabDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -23,6 +26,7 @@ export default function VocabDetailScreen() {
   const [examples, setExamples] = useState<Example[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasFlashcard, setHasFlashcard] = useState(false);
+  const [showFurigana, setShowFurigana] = useState(false);
 
   useEffect(() => {
     loadVocabData();
@@ -106,14 +110,47 @@ export default function VocabDetailScreen() {
       <ScrollView style={[commonStyles.container, styles.container]}>
         <View style={styles.mainCard}>
           <View style={styles.headerSection}>
-            {vocab.kanji && <Text style={styles.kanji}>{vocab.kanji}</Text>}
+            {vocab.kanji && (
+              <>
+                {showFurigana && vocab.readingFurigana ? (
+                  <FuriganaText
+                    text={vocab.kanji}
+                    furigana={vocab.readingFurigana}
+                    style={styles.furiganaContainer}
+                    kanjiStyle={styles.kanji}
+                    furiganaStyle={styles.furiganaText}
+                  />
+                ) : (
+                  <Text style={styles.kanji}>{vocab.kanji}</Text>
+                )}
+              </>
+            )}
             <Text style={styles.kana}>{vocab.kana}</Text>
+            
             {vocab.jlpt && (
               <View style={[styles.jlptBadge, { backgroundColor: getJLPTColor(vocab.jlpt) }]}>
                 <Text style={styles.jlptText}>{vocab.jlpt}</Text>
               </View>
             )}
+
+            {vocab.readingFurigana && (
+              <View style={styles.furiganaToggle}>
+                <Text style={styles.toggleLabel}>Furigana</Text>
+                <Switch
+                  value={showFurigana}
+                  onValueChange={setShowFurigana}
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                  thumbColor={colors.card}
+                />
+              </View>
+            )}
           </View>
+
+          {vocab.pitch && (
+            <View style={styles.pitchSection}>
+              <PitchAccent pitch={vocab.pitch} />
+            </View>
+          )}
 
           <View style={styles.meaningSection}>
             <Text style={styles.sectionTitle}>Nghĩa</Text>
@@ -202,11 +239,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  furiganaContainer: {
+    marginBottom: 8,
+  },
   kanji: {
     fontSize: 48,
     fontWeight: '700',
     color: colors.text,
     marginBottom: 8,
+  },
+  furiganaText: {
+    fontSize: 16,
+    color: colors.textSecondary,
   },
   kana: {
     fontSize: 24,
@@ -217,11 +261,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
+    marginBottom: 12,
   },
   jlptText: {
     fontSize: 14,
     fontWeight: '700',
     color: colors.card,
+  },
+  furiganaToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  toggleLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  pitchSection: {
+    paddingTop: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    alignItems: 'center',
   },
   meaningSection: {
     marginTop: 20,
