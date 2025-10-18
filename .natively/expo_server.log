@@ -6634,3 +6634,5 @@ Import stack:
 
 2025-10-18T15:44:16.273Z expo:start:server:middleware:manifest Resolved entry point: index.ts (project root: /expo-project)
 2025-10-18T15:44:16.273Z expo:start:server:metro:router Using app as the root directory for Expo Router.
+2025-10-18T15:44:18.378Z expo:start:server:middleware:manifest Resolved entry point: index.ts (project root: /expo-project)
+2025-10-18T15:44:18.378Z expo:start:server:metro:router Using app as the root directory for Expo Router.
