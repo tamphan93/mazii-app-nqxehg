@@ -1,6 +1,6 @@
 
 import { Platform } from 'react-native';
-import { Vocab, Kanji, Grammar, Example, Flashcard, Radical, KanjiRadical } from '@/types/dictionary';
+import { Vocab, Kanji, Grammar, Example, Flashcard, Radical, KanjiRadical, ScanHistory } from '@/types/dictionary';
 
 // Conditionally import SQLite only on native platforms
 let SQLite: any = null;
@@ -99,6 +99,14 @@ export const initDatabase = async () => {
         createdAt TEXT DEFAULT CURRENT_TIMESTAMP
       );
       
+      CREATE TABLE IF NOT EXISTS scan_history (
+        id TEXT PRIMARY KEY,
+        text TEXT NOT NULL,
+        timestamp TEXT NOT NULL,
+        imageUri TEXT,
+        createdAt TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+      
       CREATE INDEX IF NOT EXISTS idx_vocab_kana ON cached_vocab(kana);
       CREATE INDEX IF NOT EXISTS idx_vocab_kanji ON cached_vocab(kanji);
       CREATE INDEX IF NOT EXISTS idx_kanji_char ON cached_kanji(char);
@@ -108,6 +116,7 @@ export const initDatabase = async () => {
       CREATE INDEX IF NOT EXISTS idx_flashcards_type ON flashcards(type);
       CREATE INDEX IF NOT EXISTS idx_kanji_radical_kanjiId ON kanji_radical(kanjiId);
       CREATE INDEX IF NOT EXISTS idx_kanji_radical_radicalId ON kanji_radical(radicalId);
+      CREATE INDEX IF NOT EXISTS idx_scan_history_timestamp ON scan_history(timestamp DESC);
     `);
     
     console.log('Database initialized successfully');
@@ -549,5 +558,72 @@ export const getFlashcardByTargetId = async (targetId: string): Promise<Flashcar
   } catch (error) {
     console.error('Error getting flashcard by target id:', error);
     return null;
+  }
+};
+
+// Scan History operations
+export const saveScanHistory = async (text: string, imageUri?: string): Promise<string> => {
+  if (Platform.OS === 'web') {
+    console.log('Scan history not available on web');
+    throw new Error('Scan history not available on web platform');
+  }
+  const database = getDatabase();
+  try {
+    const id = `scan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const timestamp = new Date().toISOString();
+    await database.runAsync(
+      `INSERT INTO scan_history (id, text, timestamp, imageUri) VALUES (?, ?, ?, ?)`,
+      [id, text, timestamp, imageUri || null]
+    );
+    console.log('Scan history saved:', id);
+    return id;
+  } catch (error) {
+    console.error('Error saving scan history:', error);
+    throw error;
+  }
+};
+
+export const getScanHistory = async (limit: number = 50): Promise<ScanHistory[]> => {
+  if (Platform.OS === 'web') {
+    return [];
+  }
+  const database = getDatabase();
+  try {
+    const results = await database.getAllAsync<ScanHistory>(
+      `SELECT * FROM scan_history ORDER BY timestamp DESC LIMIT ?`,
+      [limit]
+    );
+    return results;
+  } catch (error) {
+    console.error('Error getting scan history:', error);
+    return [];
+  }
+};
+
+export const deleteScanHistory = async (id: string) => {
+  if (Platform.OS === 'web') {
+    console.log('Scan history not available on web');
+    return;
+  }
+  const database = getDatabase();
+  try {
+    await database.runAsync('DELETE FROM scan_history WHERE id = ?', [id]);
+    console.log('Scan history deleted:', id);
+  } catch (error) {
+    console.error('Error deleting scan history:', error);
+  }
+};
+
+export const clearAllScanHistory = async () => {
+  if (Platform.OS === 'web') {
+    console.log('Scan history not available on web');
+    return;
+  }
+  const database = getDatabase();
+  try {
+    await database.runAsync('DELETE FROM scan_history');
+    console.log('All scan history cleared');
+  } catch (error) {
+    console.error('Error clearing scan history:', error);
   }
 };

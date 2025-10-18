@@ -73,6 +73,13 @@ export interface Flashcard {
   createdAt: string;
 }
 
+export interface ScanHistory {
+  id: string;
+  text: string;
+  timestamp: string;
+  imageUri?: string;
+}
+
 export type SearchType = 'auto' | 'vocab' | 'kanji' | 'grammar';
 
 export interface SearchResult {

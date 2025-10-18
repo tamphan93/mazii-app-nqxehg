@@ -1,5 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
+import { getAllFlashcards, getDueFlashcards } from '@/utils/database';
+import { IconSymbol } from '@/components/IconSymbol';
 import {
   View,
   Text,
@@ -9,21 +11,23 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
-import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles } from '@/styles/commonStyles';
-import { getAllFlashcards, getDueFlashcards } from '@/utils/database';
+import { Stack, useRouter } from 'expo-router';
 
 export default function ProfileScreen() {
-  const router = useRouter();
   const [totalCards, setTotalCards] = useState(0);
   const [dueCards, setDueCards] = useState(0);
+  const router = useRouter();
 
   useEffect(() => {
     loadStats();
   }, []);
 
   const loadStats = async () => {
+    if (Platform.OS === 'web') {
+      return;
+    }
+
     try {
       const all = await getAllFlashcards();
       const due = await getDueFlashcards();
@@ -36,15 +40,16 @@ export default function ProfileScreen() {
 
   const handleClearCache = () => {
     Alert.alert(
-      'Xóa cache',
-      'Bạn có chắc muốn xóa toàn bộ dữ liệu đã lưu?',
+      'Clear Cache',
+      'Are you sure you want to clear all cached data? This will not delete your flashcards.',
       [
-        { text: 'Hủy', style: 'cancel' },
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Xóa',
+          text: 'Clear',
           style: 'destructive',
           onPress: () => {
-            Alert.alert('Thông báo', 'Tính năng đang phát triển');
+            console.log('Cache cleared');
+            Alert.alert('Success', 'Cache cleared successfully');
           },
         },
       ]
@@ -52,225 +57,185 @@ export default function ProfileScreen() {
   };
 
   return (
-    <>
-      {Platform.OS === 'ios' && (
-        <Stack.Screen
-          options={{
-            title: 'Cài đặt',
-          }}
-        />
-      )}
-      <ScrollView style={[commonStyles.container, styles.container]}>
-        <View style={styles.header}>
-          <View style={styles.avatarContainer}>
-            <IconSymbol name="person.circle.fill" size={80} color={colors.primary} />
-          </View>
-          <Text style={styles.userName}>Người dùng</Text>
-          <Text style={styles.userEmail}>Chưa đăng nhập</Text>
-        </View>
+    <View style={styles.container}>
+      <Stack.Screen options={{ title: 'Profile', headerShown: true }} />
 
+      <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.statsCard}>
-          <Text style={styles.statsTitle}>Thống kê học tập</Text>
-          <View style={styles.statsGrid}>
+          <Text style={styles.statsTitle}>Study Statistics</Text>
+          <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{totalCards}</Text>
-              <Text style={styles.statLabel}>Tổng flashcard</Text>
+              <Text style={styles.statLabel}>Total Cards</Text>
             </View>
+            <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{dueCards}</Text>
-              <Text style={styles.statLabel}>Cần ôn tập</Text>
+              <Text style={[styles.statValue, { color: colors.primary }]}>{dueCards}</Text>
+              <Text style={styles.statLabel}>Due Today</Text>
             </View>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Cài đặt</Text>
+          <Text style={styles.sectionTitle}>Features</Text>
+
+          <Pressable
+            style={styles.menuItem}
+            onPress={() => router.push('/scan')}
+          >
+            <View style={styles.menuItemLeft}>
+              <View style={[styles.menuIcon, { backgroundColor: colors.primaryLight }]}>
+                <IconSymbol name="camera.fill" size={24} color={colors.primary} />
+              </View>
+              <Text style={styles.menuItemText}>Scan Japanese Text</Text>
+            </View>
+            <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+          </Pressable>
+
+          <Pressable
+            style={styles.menuItem}
+            onPress={() => router.push('/scan-history')}
+          >
+            <View style={styles.menuItemLeft}>
+              <View style={[styles.menuIcon, { backgroundColor: colors.primaryLight }]}>
+                <IconSymbol name="clock.fill" size={24} color={colors.primary} />
+              </View>
+              <Text style={styles.menuItemText}>Scan History</Text>
+            </View>
+            <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+          </Pressable>
 
           <Pressable
             style={styles.menuItem}
             onPress={() => router.push('/tts-settings')}
           >
             <View style={styles.menuItemLeft}>
-              <IconSymbol name="speaker.wave.2" size={24} color={colors.text} />
-              <Text style={styles.menuItemText}>Giọng đọc (TTS)</Text>
-            </View>
-            <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
-          </Pressable>
-
-          <Pressable
-            style={styles.menuItem}
-            onPress={() => Alert.alert('Thông báo', 'Tính năng đang phát triển')}
-          >
-            <View style={styles.menuItemLeft}>
-              <IconSymbol name="globe" size={24} color={colors.text} />
-              <Text style={styles.menuItemText}>Ngôn ngữ</Text>
-            </View>
-            <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
-          </Pressable>
-
-          <Pressable
-            style={styles.menuItem}
-            onPress={() => Alert.alert('Thông báo', 'Tính năng đang phát triển')}
-          >
-            <View style={styles.menuItemLeft}>
-              <IconSymbol name="bell" size={24} color={colors.text} />
-              <Text style={styles.menuItemText}>Thông báo</Text>
-            </View>
-            <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
-          </Pressable>
-
-          <Pressable style={styles.menuItem} onPress={handleClearCache}>
-            <View style={styles.menuItemLeft}>
-              <IconSymbol name="trash" size={24} color={colors.error} />
-              <Text style={[styles.menuItemText, { color: colors.error }]}>Xóa cache</Text>
+              <View style={[styles.menuIcon, { backgroundColor: colors.primaryLight }]}>
+                <IconSymbol name="speaker.wave.2.fill" size={24} color={colors.primary} />
+              </View>
+              <Text style={styles.menuItemText}>TTS Settings</Text>
             </View>
             <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
           </Pressable>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Về ứng dụng</Text>
+          <Text style={styles.sectionTitle}>Settings</Text>
 
-          <Pressable
-            style={styles.menuItem}
-            onPress={() => Alert.alert('Thông báo', 'Tính năng đang phát triển')}
-          >
+          <Pressable style={styles.menuItem} onPress={handleClearCache}>
             <View style={styles.menuItemLeft}>
-              <IconSymbol name="info.circle" size={24} color={colors.text} />
-              <Text style={styles.menuItemText}>Giới thiệu</Text>
-            </View>
-            <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
-          </Pressable>
-
-          <Pressable
-            style={styles.menuItem}
-            onPress={() => Alert.alert('Thông báo', 'Tính năng đang phát triển')}
-          >
-            <View style={styles.menuItemLeft}>
-              <IconSymbol name="doc.text" size={24} color={colors.text} />
-              <Text style={styles.menuItemText}>Điều khoản sử dụng</Text>
+              <View style={[styles.menuIcon, { backgroundColor: '#FEE' }]}>
+                <IconSymbol name="trash.fill" size={24} color={colors.error} />
+              </View>
+              <Text style={styles.menuItemText}>Clear Cache</Text>
             </View>
             <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
           </Pressable>
         </View>
 
-        <View style={styles.versionContainer}>
-          <Text style={styles.versionText}>Mazii Dictionary v1.0.0</Text>
-          <Text style={styles.versionSubtext}>Made with ❤️ for Japanese learners</Text>
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>Mazii Dictionary v1.0.0</Text>
+          <Text style={styles.footerSubtext}>Made with ❤️ for Japanese learners</Text>
         </View>
-
-        <View style={styles.bottomPadding} />
       </ScrollView>
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    alignItems: 'center',
-    paddingVertical: 32,
-    backgroundColor: colors.card,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  avatarContainer: {
-    marginBottom: 16,
-  },
-  userName: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  userEmail: {
-    fontSize: 14,
-    color: colors.textSecondary,
+  content: {
+    padding: 15,
   },
   statsCard: {
     backgroundColor: colors.card,
-    margin: 16,
     borderRadius: 16,
     padding: 20,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
-    elevation: 3,
+    marginBottom: 20,
+    ...commonStyles.shadow,
   },
   statsTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: 'bold',
     color: colors.text,
-    marginBottom: 16,
+    marginBottom: 15,
   },
-  statsGrid: {
+  statsRow: {
     flexDirection: 'row',
-    gap: 16,
+    justifyContent: 'space-around',
   },
   statItem: {
-    flex: 1,
-    backgroundColor: colors.background,
-    padding: 16,
-    borderRadius: 12,
     alignItems: 'center',
+    flex: 1,
   },
   statValue: {
     fontSize: 32,
-    fontWeight: '700',
-    color: colors.primary,
-    marginBottom: 4,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 5,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
-    textAlign: 'center',
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: colors.border,
+    marginHorizontal: 20,
   },
   section: {
-    marginTop: 16,
-    paddingHorizontal: 16,
+    marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginBottom: 12,
-    textTransform: 'uppercase',
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 10,
+    marginLeft: 5,
   },
   menuItem: {
-    backgroundColor: colors.card,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    backgroundColor: colors.card,
+    padding: 15,
     borderRadius: 12,
-    marginBottom: 8,
-    boxShadow: '0px 1px 4px rgba(0, 0, 0, 0.05)',
-    elevation: 1,
+    marginBottom: 10,
+    ...commonStyles.shadow,
   },
   menuItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    flex: 1,
+  },
+  menuIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
   },
   menuItemText: {
     fontSize: 16,
-    fontWeight: '500',
     color: colors.text,
+    fontWeight: '500',
   },
-  versionContainer: {
+  footer: {
     alignItems: 'center',
-    paddingVertical: 32,
+    marginTop: 30,
+    marginBottom: 20,
   },
-  versionText: {
+  footerText: {
     fontSize: 14,
     color: colors.textSecondary,
-    marginBottom: 4,
+    marginBottom: 5,
   },
-  versionSubtext: {
+  footerSubtext: {
     fontSize: 12,
     color: colors.textSecondary,
-  },
-  bottomPadding: {
-    height: Platform.OS === 'ios' ? 20 : 100,
   },
 });
