@@ -15,26 +15,26 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { useDatabase } from '@/hooks/useDatabase';
 import {
-  searchCachedVocab,
-  searchCachedKanji,
-  searchCachedGrammar,
   cacheVocab,
   cacheKanji,
   cacheGrammar,
 } from '@/utils/database';
 import { Vocab, Kanji, Grammar, SearchType } from '@/types/dictionary';
 import { mockVocabData, mockKanjiData, mockGrammarData } from '@/utils/mockData';
+import { useDeconjugationSearch } from '@/hooks/useDeconjugationSearch';
 
 export default function SearchScreen() {
   const router = useRouter();
   const { isReady } = useDatabase();
+  const { search, isSearching } = useDeconjugationSearch();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<SearchType>('vocab');
   const [vocabResults, setVocabResults] = useState<Vocab[]>([]);
   const [kanjiResults, setKanjiResults] = useState<Kanji[]>([]);
   const [grammarResults, setGrammarResults] = useState<Grammar[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
   const [selectedJLPT, setSelectedJLPT] = useState<string | null>(null);
+  const [usedDeconjugation, setUsedDeconjugation] = useState(false);
+  const [deconjugatedForms, setDeconjugatedForms] = useState<string[]>([]);
 
   useEffect(() => {
     if (isReady) {
@@ -66,39 +66,54 @@ export default function SearchScreen() {
       setVocabResults([]);
       setKanjiResults([]);
       setGrammarResults([]);
+      setUsedDeconjugation(false);
+      setDeconjugatedForms([]);
     }
   }, [searchQuery, isReady]);
 
   const performSearch = async () => {
-    setIsSearching(true);
     try {
-      const [vocab, kanji, grammar] = await Promise.all([
-        searchCachedVocab(searchQuery),
-        searchCachedKanji(searchQuery),
-        searchCachedGrammar(searchQuery),
-      ]);
-      setVocabResults(vocab);
-      setKanjiResults(kanji);
-      setGrammarResults(grammar);
+      const result = await search(searchQuery);
+      setVocabResults(result.vocab);
+      setKanjiResults(result.kanji);
+      setGrammarResults(result.grammar);
+      setUsedDeconjugation(result.usedDeconjugation);
+      setDeconjugatedForms(result.deconjugatedForms);
     } catch (error) {
       console.error('Search error:', error);
-    } finally {
-      setIsSearching(false);
     }
   };
 
   const highlightText = (text: string, query: string) => {
     if (!query.trim()) return text;
-    const parts = text.split(new RegExp(`(${query})`, 'gi'));
-    return parts.map((part, index) =>
-      part.toLowerCase() === query.toLowerCase() ? (
-        <Text key={index} style={styles.highlight}>
-          {part}
-        </Text>
-      ) : (
-        part
-      )
+    
+    // Create regex pattern for original query and deconjugated forms
+    const searchTerms = [query, ...deconjugatedForms];
+    const escapedTerms = searchTerms.map(term => 
+      term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     );
+    const pattern = escapedTerms.join('|');
+    const parts = text.split(new RegExp(`(${pattern})`, 'gi'));
+    
+    return parts.map((part, index) => {
+      const isMatch = searchTerms.some(
+        term => part.toLowerCase() === term.toLowerCase()
+      );
+      if (isMatch) {
+        const isDeconjugated = deconjugatedForms.some(
+          form => part.toLowerCase() === form.toLowerCase()
+        );
+        return (
+          <Text key={index} style={styles.highlight}>
+            {part}
+            {isDeconjugated && usedDeconjugation && (
+              <Text style={styles.deconjugationLabel}> (đã khử chia)</Text>
+            )}
+          </Text>
+        );
+      }
+      return part;
+    });
   };
 
   const filterByJLPT = <T extends { jlpt?: string }>(items: T[]): T[] => {
@@ -245,6 +260,17 @@ export default function SearchScreen() {
 
     return (
       <ScrollView style={styles.resultsContainer} showsVerticalScrollIndicator={false}>
+        {usedDeconjugation && deconjugatedForms.length > 0 && (
+          <View style={styles.deconjugationBanner}>
+            <IconSymbol name="lightbulb.fill" size={20} color={colors.warning} />
+            <View style={styles.deconjugationBannerText}>
+              <Text style={styles.deconjugationTitle}>Đã tự động khử chia động từ/tính từ</Text>
+              <Text style={styles.deconjugationSubtitle}>
+                Tìm thấy kết quả cho: {deconjugatedForms.join(', ')}
+              </Text>
+            </View>
+          </View>
+        )}
         {activeTab === 'vocab' && results.map((item) => renderVocabItem(item as Vocab))}
         {activeTab === 'kanji' && results.map((item) => renderKanjiItem(item as Kanji))}
         {activeTab === 'grammar' && results.map((item) => renderGrammarItem(item as Grammar))}
@@ -504,6 +530,37 @@ const styles = StyleSheet.create({
   highlight: {
     backgroundColor: colors.highlight,
     fontWeight: '700',
+  },
+  deconjugationLabel: {
+    fontSize: 10,
+    color: colors.warning,
+    fontWeight: '600',
+    fontStyle: 'italic',
+  },
+  deconjugationBanner: {
+    flexDirection: 'row',
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.warning,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+    elevation: 1,
+  },
+  deconjugationBannerText: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  deconjugationTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  deconjugationSubtitle: {
+    fontSize: 12,
+    color: colors.textSecondary,
   },
   centerContainer: {
     flex: 1,

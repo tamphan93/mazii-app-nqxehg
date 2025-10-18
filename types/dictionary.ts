@@ -67,3 +67,18 @@ export interface SearchResult {
 }
 
 export type ReviewGrade = 'again' | 'hard' | 'good' | 'easy';
+
+export interface DeconjugationResult {
+  original: string;
+  base: string;
+  conjugationType: string;
+  confidence: number;
+}
+
+export interface DeconjugationSearchResult {
+  vocab: Vocab[];
+  kanji: Kanji[];
+  grammar: Grammar[];
+  usedDeconjugation: boolean;
+  deconjugatedForms: string[];
+}
